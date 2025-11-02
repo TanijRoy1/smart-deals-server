@@ -110,6 +110,19 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     })
+    app.delete("/bids/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await bidsCollection.deleteOne(query);
+      res.send(result);
+    })
+    app.get("/bids/:id", async (req, res) => {
+      const productId = req.params.id;
+      const query = {product : productId};
+      const cursor = bidsCollection.find(query).sort({bid_price: -1});
+      const result = await cursor.toArray();
+      res.send(result);
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
