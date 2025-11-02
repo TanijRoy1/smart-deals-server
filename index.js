@@ -99,14 +99,13 @@ async function run() {
       res.send(result);
     })
     app.get("/bids", async (req, res) => {
-      // console.log(req.query);
       const email = req.query.email;
       const query = {};
       if(email){
         query.buyer_email = email;
       }
 
-      const cursor = bidsCollection.find(query);
+      const cursor = bidsCollection.find(query).sort({bid_price: -1});
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -116,8 +115,8 @@ async function run() {
       const result = await bidsCollection.deleteOne(query);
       res.send(result);
     })
-    app.get("/bids/:id", async (req, res) => {
-      const productId = req.params.id;
+    app.get("/products/bids/:productId", async (req, res) => {
+      const productId = req.params.productId;
       const query = {product : productId};
       const cursor = bidsCollection.find(query).sort({bid_price: -1});
       const result = await cursor.toArray();
