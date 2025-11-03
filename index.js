@@ -50,6 +50,7 @@ async function run() {
         if(name){
             query.seller_name = name;
         }
+        
         const cursor = productsCollection.find(query);
         
         const result = await cursor.toArray();
@@ -58,6 +59,16 @@ async function run() {
     app.get("/latest-products", async (req, res) => {
       const projectFields = {image:1, title:1, price_min:1, price_max:1}
       const cursor = productsCollection.find().sort({created_at : -1}).limit(6).project(projectFields);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+    app.get("/my-products", async (req, res) => {
+      const email = req.query.sellerEmail;
+      const query = {};
+      if(email){
+        query.email = email
+      }
+      const cursor = productsCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -71,12 +82,14 @@ async function run() {
     // Update
     app.patch("/products/:id", async (req, res) => {
         const id = req.params.id;
-        const updatedUser = req.body;
+        const updatedProduct = req.body;
         const query = {_id : new ObjectId(id)};
         const update = {
             $set : {
-                name : updatedUser.name,
-                price : updatedUser.price
+                // name : updatedUser.name,
+                // price : updatedUser.price
+                image : updatedProduct.image,
+                seller_image : updatedProduct.seller_image
             }
         }
         const options = {};
@@ -122,6 +135,22 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     })
+    app.patch("/bids/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedBid = req.body;
+      const query = {_id : new ObjectId(id)};
+      const update = {
+        $set : {
+          buyer_image : updatedBid.buyer_image
+        }
+      }
+      const options = {};
+      const result = await bidsCollection.updateOne(query, update, options);
+      res.send(result);
+    })
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
