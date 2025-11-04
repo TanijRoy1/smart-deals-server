@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 const verifyFirebaseToken = async (req, res, next) => {
-  console.log("token", req.headers.authorization);
+  // console.log("token", req.headers.authorization);
   if (!req.headers.authorization) {
     return res.status(401).send({ message: "unauthorized access" });
   }
@@ -93,10 +93,13 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
-    app.get("/my-products", async (req, res) => {
+    app.get("/my-products", verifyFirebaseToken, async (req, res) => {
       const email = req.query.sellerEmail;
       const query = {};
       if (email) {
+        if(req.token_email !== email){
+          return res.status(403).send({message : "Forbidden Access"})
+        }
         query.email = email;
       }
       const cursor = productsCollection.find(query);
@@ -127,6 +130,16 @@ async function run() {
       const result = await productsCollection.updateOne(query, update, options);
       res.send(result);
     });
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedProduct = req.body;
+      const query = {_id : new ObjectId(id)};
+      const update = {
+        $set: updatedProduct
+      }
+      const result = await productsCollection.updateOne(query, update);
+      res.send(result);
+    })
 
     // Delete
     app.delete("/my-products/:id", async (req, res) => {
