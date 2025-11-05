@@ -1,12 +1,13 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId, AuthMechanism } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 3000;
 const admin = require("firebase-admin");
 
-const serviceAccount = require("./smart-deals-firebase-adminsdk.json");
+const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -16,25 +17,39 @@ admin.initializeApp({
 app.use(cors());
 app.use(express.json());
 
+// const verifyFirebaseToken = async (req, res, next) => {
+//   // console.log("token", req.headers.authorization);
+//   if (!req.headers.authorization) {
+//     return res.status(401).send({ message: "unauthorized access" });
+//   }
+//   const token = req.headers.authorization.split(" ")[1];
+//   if (!token) {
+//     return res.status(401).send({ message: "unauthorized access" });
+//   }
+
+//   // verify token
+//   try {
+//     const userInfo = await admin.auth().verifyIdToken(token);
+//     req.token_email = userInfo.email;
+//     next();
+//   } catch {
+//     return res.status(401).send({ message: "unauthorized access" });
+//   }
+// };
+
 const verifyFirebaseToken = async (req, res, next) => {
-  // console.log("token", req.headers.authorization);
-  if (!req.headers.authorization) {
-    return res.status(401).send({ message: "unauthorized access" });
+  if(!req.headers.authorization){
+    res.status(401).send({message: "unauthorized access"});
   }
   const token = req.headers.authorization.split(" ")[1];
-  if (!token) {
-    return res.status(401).send({ message: "unauthorized access" });
-  }
-
-  // verify token
   try {
-    const userInfo = await admin.auth().verifyIdToken(token);
-    req.token_email = userInfo.email;
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.token_email = decoded.email;
     next();
-  } catch {
-    return res.status(401).send({ message: "unauthorized access" });
+  } catch (error) {
+    res.status(401).send({message: "unauthorized access"});
   }
-};
+}
 
 //smartDBUser
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.z1gnsog.mongodb.net/?appName=Cluster0`;
@@ -59,7 +74,8 @@ async function run() {
     const bidsCollection = smartDB.collection("bids");
 
     // Create
-    app.post("/products", async (req, res) => {
+    app.post("/products", verifyFirebaseToken, async (req, res) => {
+      // console.log("after post headers", req.headers)
       const newUser = req.body;
       const result = await productsCollection.insertOne(newUser);
       res.send(result);
@@ -196,7 +212,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
