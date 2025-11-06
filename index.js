@@ -6,8 +6,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 const admin = require("firebase-admin");
 
-const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
-const serviceAccount = JSON.parse(decoded);
+
+const serviceAccount = require("./smart-deals-firebase-adminsdk.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -67,7 +67,7 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const smartDB = client.db("smartDB");
     const productsCollection = smartDB.collection("products");
